@@ -1,5 +1,10 @@
 <?php
+$pageTitle = "Login";
+require_once __DIR__ . '/../config/performance.php'; // ADD THIS
+$perf = new PerformanceMonitor(); // ADD THIS
+
 include "../config/db.php";
+// ... rest of your code
 
 // Run migration if new columns missing
 $check = $conn->query("SHOW COLUMNS FROM users LIKE 'security_pin'");
@@ -36,10 +41,31 @@ $resetSuccess = isset($_GET['reset']) && $_GET['reset'] === '1';
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Log In – SmartBudget</title>
-  <link rel="stylesheet" href="../css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SmartBudget - Track your expenses intelligently. Manage your budget, scan QR codes, and get spending insights.">
+    <meta name="keywords" content="budget, expense tracker, personal finance, money management, QR scanner">
+    <meta name="author" content="SmartBudget Team">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="SmartBudget - Intelligent Expense Tracking">
+    <meta property="og:description" content="Track your expenses intelligently and achieve your financial goals.">
+    <meta property="og:image" content="../images/smartbudget-og.jpg">
+    <meta property="og:url" content="<?= 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+    
+    <!-- Preconnect for fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- CSS with cache busting -->
+    <link rel="stylesheet" href="../css/style.css?v=<?= filemtime('../css/style.css') ?>">
+    
+    <title><?= $pageTitle ?? 'SmartBudget' ?> – SmartBudget</title>
 </head>
 <body class="auth-page auth-welcome">
   <div class="container">
@@ -54,8 +80,7 @@ $resetSuccess = isset($_GET['reset']) && $_GET['reset'] === '1';
         <div class="input-password-wrap">
           <input name="password" type="password" placeholder="Password" id="login-password" required>
           <button type="button" class="toggle-password" aria-label="Show password" data-target="login-password">
-            <img src="../images/eye-off.svg" alt="" class="icon-eye">
-            <img src="../images/eye.svg" alt="" class="icon-eye-open" hidden>
+            <img src="../images/eye.svg" alt="" class="icon-password-toggle">
           </button>
         </div>
         <button type="submit" class="btn-primary">Log In</button>
@@ -71,5 +96,9 @@ $resetSuccess = isset($_GET['reset']) && $_GET['reset'] === '1';
     </div>
   </div>
   <script src="../js/password-toggle.js"></script>
+</body>
+</html>
+
+<?php $perf->displayStats(); ?> <!-- ADD THIS -->
 </body>
 </html>

@@ -1,5 +1,10 @@
 <?php
+$pageTitle = "Statistics";
+require_once __DIR__ . '/../config/performance.php'; // ADD THIS
+$perf = new PerformanceMonitor(); // ADD THIS
+
 include "../config/db.php";
+// ... rest of your code
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../auth/login.php");
@@ -83,11 +88,36 @@ $js_breakdown = json_encode($breakdown_data);
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Stats – SmartBudget</title>
-<link rel="stylesheet" href="../css/style.css">
-<style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="View your spending statistics and trends with SmartBudget. Track monthly, weekly, and yearly expenses with detailed insights.">
+<meta name="keywords" content="spending statistics, expense trends, budget analysis, financial insights, money tracker">
+<meta name="author" content="SmartBudget Team">
 
+<!-- Open Graph / Social Media -->
+<meta property="og:title" content="Spending Statistics - SmartBudget">
+<meta property="og:description" content="Track your spending patterns and get insights with SmartBudget's comprehensive statistics.">
+<meta property="og:image" content="../images/smartbudget-og.jpg">
+<meta property="og:url" content="<?= 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+<meta property="og:type" content="website">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16x16.png">
+<link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+
+<!-- Preconnect for fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- CSS with cache busting -->
+<link rel="stylesheet" href="../css/style.css?v=<?= filemtime('../css/style.css') ?>">
+
+<title><?= $pageTitle ?> – SmartBudget</title>
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   STATS PAGE LAYOUT
+───────────────────────────────────────────────────────────── */
 body.app-page .container.figma-container {
   padding-top: 0 !important;
 }
@@ -96,9 +126,6 @@ body.app-page .container.figma-container {
   padding-bottom: 0.75rem !important;
 }
 
-/* ─────────────────────────────────────────────────────────────
-   STATS PAGE LAYOUT
-───────────────────────────────────────────────────────────── */
 .stats-wrap {
   padding: 16px 0 60px;
 }
@@ -358,7 +385,7 @@ body.app-page .container.figma-container {
   <!-- ══ HEADER — identical to dashboard/index.php ══ -->
   <header class="page-header">
     <div class="brand">
-      <img src="../images/smartbudget-logo.jpg" alt="SmartBudget" class="logo-img" style="height:40px;width:auto;">
+      <img src="../images/smartbudget-logo.svg" alt="SmartBudget" class="logo-img" style="height:40px;width:auto;">
       <span class="brand-name">SmartBudget</span>
     </div>
     <nav>
@@ -630,5 +657,6 @@ drawChart('monthly');
 drawCats();
 drawBreakdown();
 </script>
+<?php $perf->displayStats(); ?> <!-- ADD THIS -->
 </body>
 </html>

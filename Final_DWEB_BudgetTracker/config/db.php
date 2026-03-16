@@ -25,7 +25,11 @@ $tables = [
         password VARCHAR(255),
         security_pin VARCHAR(255) NULL,
         reset_token VARCHAR(64) NULL,
-        reset_token_expires DATETIME NULL
+        reset_token_expires DATETIME NULL,
+        avatar VARCHAR(255) NULL,
+        city VARCHAR(100) NULL,
+        country VARCHAR(100) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )",
     'budgets' => "CREATE TABLE IF NOT EXISTS budgets (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -80,6 +84,10 @@ $migrations = [
         'security_pin'         => "ALTER TABLE users ADD COLUMN security_pin VARCHAR(255) NULL",
         'reset_token'          => "ALTER TABLE users ADD COLUMN reset_token VARCHAR(64) NULL",
         'reset_token_expires'  => "ALTER TABLE users ADD COLUMN reset_token_expires DATETIME NULL",
+        'avatar'               => "ALTER TABLE users ADD COLUMN avatar VARCHAR(255) NULL",
+        'city'                 => "ALTER TABLE users ADD COLUMN city VARCHAR(100) NULL",
+        'country'              => "ALTER TABLE users ADD COLUMN country VARCHAR(100) NULL",
+        'created_at'           => "ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
     ],
     'category_budgets' => [
         'percentage' => "ALTER TABLE category_budgets ADD COLUMN percentage DECIMAL(5,2) NULL",
@@ -94,4 +102,49 @@ foreach ($migrations as $table => $columns) {
         }
     }
 }
+
+// Add indexes for better performance
+$indexes = [
+    "CREATE INDEX idx_user_email ON users(email)",
+    "CREATE INDEX idx_expenses_user_date ON expenses(user_id, date)",
+    "CREATE INDEX idx_budgets_user_month ON budgets(user_id, month)",
+    "CREATE INDEX idx_category_budgets_user_month ON category_budgets(user_id, month)",
+];
+
+foreach ($indexes as $sql) {
+    try {
+        $conn->query($sql);
+    } catch (Exception $e) {
+        // Index might already exist, ignore
+    }
+}
+
+// Add user settings table
+$conn->query("CREATE TABLE IF NOT EXISTS user_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNIQUE,
+    currency VARCHAR(3) DEFAULT 'PHP',
+    date_format VARCHAR(10) DEFAULT 'Y-m-d',
+    notifications_enabled BOOLEAN DEFAULT TRUE,
+    email_notifications BOOLEAN DEFAULT TRUE,
+    budget_alerts BOOLEAN DEFAULT TRUE,
+    theme VARCHAR(20) DEFAULT 'dark',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+)");
+
+// Add notifications table
+$conn->query("CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    type VARCHAR(50),
+    title VARCHAR(255),
+    message TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_read (user_id, is_read)
+)");
 ?>
+

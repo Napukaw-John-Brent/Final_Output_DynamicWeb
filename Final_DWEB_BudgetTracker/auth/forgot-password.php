@@ -1,7 +1,11 @@
 <?php
+$pageTitle = "Forgot Password";
+require_once __DIR__ . '/../config/performance.php'; // ADD THIS
+$perf = new PerformanceMonitor(); // ADD THIS
+
 session_start();
 include "../config/db.php";
-
+// ... rest
 $check = $conn->query("SHOW COLUMNS FROM users LIKE 'reset_token'");
 if ($check && $check->num_rows === 0) {
     require_once __DIR__ . '/../config/migrate_auth.php';
@@ -45,10 +49,31 @@ if (!empty($_POST['email'])) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Forgot Password – SmartBudget</title>
-<link rel="stylesheet" href="../css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SmartBudget - Track your expenses intelligently. Manage your budget, scan QR codes, and get spending insights.">
+    <meta name="keywords" content="budget, expense tracker, personal finance, money management, QR scanner">
+    <meta name="author" content="SmartBudget Team">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="SmartBudget - Intelligent Expense Tracking">
+    <meta property="og:description" content="Track your expenses intelligently and achieve your financial goals.">
+    <meta property="og:image" content="../images/smartbudget-og.jpg">
+    <meta property="og:url" content="<?= 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+    
+    <!-- Preconnect for fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- CSS with cache busting -->
+    <link rel="stylesheet" href="../css/style.css?v=<?= filemtime('../css/style.css') ?>">
+    
+    <title><?= $pageTitle ?? 'SmartBudget' ?> – SmartBudget</title>
 </head>
 
 <body class="auth-page auth-forgot">

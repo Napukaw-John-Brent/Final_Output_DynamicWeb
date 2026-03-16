@@ -1,5 +1,10 @@
 <?php
+$pageTitle = "QR Codes";
+require_once __DIR__ . '/../config/performance.php'; // ADD THIS
+$perf = new PerformanceMonitor(); // ADD THIS
+
 include "../config/db.php";
+// ... rest of your code
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../auth/login.php");
@@ -50,227 +55,41 @@ $stmt->close();
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Saved QR Codes – SmartBudget</title>
-  <link rel="stylesheet" href="../css/style.css">
-  <!-- jsQR: works in ALL browsers, no BarcodeDetector needed -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <style>
-    body.app-page .container.figma-container { padding-top: 0 !important; }
-    .page-header {
-      margin-bottom: 0.75rem !important;
-      padding-top: 1.25rem !important;
-      padding-bottom: 0.75rem !important;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Scan and save QR codes with SmartBudget. Easily store payment QR codes and access them anytime for quick expense tracking.">
+<meta name="keywords" content="QR scanner, QR code saver, payment QR, barcode scanner, expense tracking">
+<meta name="author" content="SmartBudget Team">
 
-    .qr-wrap { padding: 16px 0 60px; }
+<!-- Open Graph / Social Media -->
+<meta property="og:title" content="QR Code Saver - SmartBudget">
+<meta property="og:description" content="Scan, save, and manage QR codes for quick and easy expense tracking with SmartBudget.">
+<meta property="og:image" content="../images/smartbudget-og.jpg">
+<meta property="og:url" content="<?= 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+<meta property="og:type" content="website">
 
-    .qr-toprow {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .qr-toprow h2 { font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0; }
-    .qr-toprow h2 span { color: #00CC99; }
-    .qr-count-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,204,153,.15);
-      color: #00CC99;
-      font-size: .78rem;
-      font-weight: 700;
-      padding: 6px 16px;
-      border-radius: 99px;
-      border: 1px solid rgba(0,204,153,.25);
-    }
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16x16.png">
+<link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
 
-    .qr-top-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-      margin-bottom: 18px;
-    }
-    @media(max-width: 700px) { .qr-top-grid { grid-template-columns: 1fr; } }
+<!-- Preconnect for fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    .teal-card-title { font-size: .95rem; font-weight: 700; color: #1A2828; margin-bottom: 16px; }
+<!-- CSS with cache busting -->
+<link rel="stylesheet" href="../css/style.css?v=<?= filemtime('../css/style.css') ?>">
 
-    /* ── Scanner ── */
-    .scanner-box {
-      background: rgba(0,0,0,.18);
-      border-radius: 12px;
-      overflow: hidden;
-      aspect-ratio: 1 / 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      margin-bottom: 12px;
-    }
-    #qr-video {
-      width: 100%; height: 100%;
-      object-fit: cover; display: none;
-    }
-    /* Hidden canvas used by jsQR — never shown */
-    #qr-canvas { display: none; }
+<!-- jsQR: works in ALL browsers, no BarcodeDetector needed -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
-    .scanner-overlay {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      pointer-events: none;
-    }
-    .scanner-frame {
-      width: 60%; aspect-ratio: 1/1;
-      border: 3px solid #00CC99;
-      border-radius: 12px;
-      box-shadow: 0 0 0 9999px rgba(0,0,0,.35);
-    }
-    .scanner-line {
-      position: absolute;
-      left: 20%; right: 20%;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, #00CC99, transparent);
-      animation: scan 2s ease-in-out infinite;
-      display: none;
-    }
-    @keyframes scan {
-      0%   { top: 20%; }
-      50%  { top: 78%; }
-      100% { top: 20%; }
-    }
-    .scanner-placeholder {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 10px;
-      color: rgba(26,40,40,.55);
-    }
-    .scanner-placeholder-icon { font-size: 2.8rem; }
-    .scanner-placeholder-text { font-size: .8rem; font-weight: 600; }
-
-    /* Status badge shown inside scanner while active */
-    .scanner-status {
-      position: absolute;
-      bottom: 10px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,.65);
-      color: #00CC99;
-      font-size: .7rem; font-weight: 700;
-      padding: 4px 14px; border-radius: 99px;
-      display: none; white-space: nowrap;
-    }
-    .scanner-status.show { display: block; }
-
-    .btn-start-scan {
-      width: 100%; padding: 11px;
-      background: rgba(0,0,0,.2);
-      color: #1A2828;
-      border: 2px solid rgba(26,40,40,.3);
-      border-radius: 8px;
-      font-size: .875rem; font-weight: 700;
-      cursor: pointer; font-family: inherit;
-      transition: all .2s; margin-bottom: 8px;
-    }
-    .btn-start-scan:hover { background: rgba(0,0,0,.3); }
-    .btn-start-scan.scanning { background: #1A2828; color: #00CC99; border-color: #1A2828; }
-
-    /* Toast notification for auto-save feedback */
-    .qr-toast {
-      display: none;
-      align-items: center; gap: 8px;
-      background: #065f46; color: #d1fae5;
-      border: 1px solid #6ee7b7;
-      border-radius: 8px; padding: 10px 14px;
-      font-size: .82rem; font-weight: 600;
-      margin-top: 8px; word-break: break-all;
-    }
-    .qr-toast.show { display: flex; }
-    .qr-toast.duplicate { background: #1e3a5f; color: #bfdbfe; border-color: #93c5fd; }
-
-    /* ── Save form ── */
-    .qr-save-form { display: flex; flex-direction: column; gap: 10px; }
-    .qr-save-form label {
-      font-size: .72rem; font-weight: 700; color: #1A2828;
-      opacity: .7; text-transform: uppercase; letter-spacing: .7px;
-    }
-    .qr-save-form textarea {
-      width: 100%; padding: 10px 14px; border-radius: 8px;
-      border: none; background: #fff; color: #1A2828;
-      font-size: .875rem; font-family: inherit; outline: none;
-      box-shadow: 0 2px 8px rgba(0,0,0,.12);
-      transition: box-shadow .2s; resize: vertical;
-    }
-    .qr-save-form textarea:focus { box-shadow: 0 0 0 3px rgba(0,204,153,.35); }
-    .qr-save-form textarea::placeholder { color: #aaa; }
-    .btn-save-qr {
-      width: 100%; padding: 11px;
-      background: #1A2828; color: #fff;
-      border: none; border-radius: 8px;
-      font-size: .875rem; font-weight: 700;
-      cursor: pointer; font-family: inherit;
-      transition: background .2s, transform .15s;
-    }
-    .btn-save-qr:hover { background: #0d1a1a; transform: translateY(-1px); }
-    .qr-hint {
-      font-size: .7rem; color: rgba(26,40,40,.55);
-      font-style: italic; line-height: 1.5; margin-top: 2px;
-    }
-
-    /* ── Section divider ── */
-    .qr-section-hdr {
-      font-size: .7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 1.1px; color: rgba(255,255,255,.35);
-      margin: 6px 0 12px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .qr-section-hdr::after {
-      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.07);
-    }
-
-    /* ── Saved QR list ── */
-    .qr-list { display: flex; flex-direction: column; gap: 10px; }
-    .qr-item-row {
-      display: flex; align-items: center;
-      justify-content: space-between; gap: 12px;
-      background: rgba(255,255,255,.18);
-      border-radius: 10px; padding: 13px 16px;
-      transition: background .15s;
-    }
-    .qr-item-row:hover { background: rgba(255,255,255,.26); }
-    .qr-item-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-    .qr-item-icon { font-size: 1.2rem; flex-shrink: 0; }
-    .qr-item-data { font-size: .82rem; font-weight: 600; color: #1A2828; word-break: break-all; line-height: 1.4; }
-    .qr-item-actions { display: flex; gap: 7px; flex-shrink: 0; }
-    .btn-qr-copy {
-      padding: 6px 14px; background: #1A2828; color: #fff;
-      border: none; border-radius: 6px;
-      font-size: .75rem; font-weight: 700;
-      cursor: pointer; font-family: inherit;
-      transition: background .15s; white-space: nowrap;
-    }
-    .btn-qr-copy:hover  { background: #0d1a1a; }
-    .btn-qr-copy.copied { background: #005c3a; }
-    .btn-qr-delete {
-      padding: 6px 12px; background: rgba(180,0,0,.18);
-      color: #7a0000; border: 1px solid rgba(180,0,0,.25);
-      border-radius: 6px; font-size: .75rem; font-weight: 700;
-      cursor: pointer; font-family: inherit;
-      transition: background .15s; white-space: nowrap;
-    }
-    .btn-qr-delete:hover { background: rgba(180,0,0,.3); }
-
-    .qr-empty { text-align: center; padding: 40px 20px; color: rgba(26,40,40,.5); }
-    .qr-empty-icon { font-size: 2.8rem; margin-bottom: 10px; }
-    .qr-empty-text { font-size: .85rem; font-weight: 500; line-height: 1.6; }
-  </style>
-</head>
+<title><?= $pageTitle ?> – SmartBudget</title>
 <body class="app-page">
 <div class="container figma-container">
 
   <header class="page-header">
     <div class="brand">
-      <img src="../images/smartbudget-logo.jpg" alt="SmartBudget" class="logo-img" style="height:40px;width:auto;">
+      <img src="../images/smartbudget-logo.svg" alt="SmartBudget" class="logo-img" style="height:40px;width:auto;">
       <span class="brand-name">SmartBudget</span>
     </div>
     <nav>
@@ -512,5 +331,6 @@ function showToast(msg, isDuplicate) {
   toast.className   = 'qr-toast show' + (isDuplicate ? ' duplicate' : '');
 }
 </script>
+<?php $perf->displayStats(); ?> <!-- ADD THIS -->
 </body>
 </html>
