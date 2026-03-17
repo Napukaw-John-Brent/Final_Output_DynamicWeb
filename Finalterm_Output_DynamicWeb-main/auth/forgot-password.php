@@ -64,4 +64,4 @@ if (!empty($_POST['email'])) {
     </div>
   </div>
 </body>
-</html>
+</html
