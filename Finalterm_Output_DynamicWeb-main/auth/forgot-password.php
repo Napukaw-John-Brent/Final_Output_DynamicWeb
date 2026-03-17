@@ -6,8 +6,6 @@ if ($check && $check->num_rows === 0) {
     require_once __DIR__ . '/../config/migrate_auth.php';
 }
 
-$message = '';
-$error = '';
 
 if (!empty($_POST['email'])) {
     $email = trim($_POST['email']);
@@ -64,4 +62,4 @@ if (!empty($_POST['email'])) {
     </div>
   </div>
 </body>
-</html>
+</html
