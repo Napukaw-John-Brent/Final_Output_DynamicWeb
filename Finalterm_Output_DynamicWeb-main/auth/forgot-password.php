@@ -6,8 +6,6 @@ if ($check && $check->num_rows === 0) {
     require_once __DIR__ . '/../config/migrate_auth.php';
 }
 
-$message = '';
-$error = '';
 
 if (!empty($_POST['email'])) {
     $email = trim($_POST['email']);
@@ -46,7 +44,7 @@ if (!empty($_POST['email'])) {
   <div class="container">
     <div class="card auth-card auth-card-teal">
       <h2 class="auth-card-heading">Forgot Password</h2>
-      <p class="auth-card-sub accent-text">Reset Password?</p>
+      <pword?</p>
       <p class="auth-card-desc">Enter your email to reset your password and regain access to your account.</p>
       <form method="POST" class="auth-form">
         <?php if ($error): ?><p class="error"><?= htmlspecialchars($error) ?></p><?php endif; ?>
@@ -64,4 +62,4 @@ if (!empty($_POST['email'])) {
     </div>
   </div>
 </body>
-</html>
+</html
