@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/performance.php';
 $perf = new PerformanceMonitor();
 
 include "../config/db.php";
+$conn->query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../auth/login.php");
@@ -96,7 +97,9 @@ $js_breakdown = json_encode($breakdown_data);
 <body class="app-page">
 <div class="container figma-container">
 
-  <?php include '../includes/header.php'; ?>
+  <?php
+$conn->query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+$conn->query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))"); include '../includes/header.php'; ?>
 
   <div class="stats-wrap">
 
@@ -349,6 +352,8 @@ drawChart('monthly');
 drawCats();
 drawBreakdown();
 </script>
-<?php $perf->displayStats(); ?>
+<?php
+$conn->query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+$conn->query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))"); $perf->displayStats(); ?>
 </body>
 </html>

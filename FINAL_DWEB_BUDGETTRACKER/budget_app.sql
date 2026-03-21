@@ -75,14 +75,47 @@ CREATE TABLE IF NOT EXISTS expenses (
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
+
 -- ─────────────────────────────────────────────────────────────
--- 6. QR_CODES
+-- 7. QR_CODES
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS qr_codes (
     id      INT  AUTO_INCREMENT PRIMARY KEY,
     user_id INT  NOT NULL,
     qr_data TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ─────────────────────────────────────────────────────────────
+-- 8. USER_SETTINGS  (one-to-one with users)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS user_settings (
+    id                    INT         AUTO_INCREMENT PRIMARY KEY,
+    user_id               INT         NOT NULL UNIQUE,
+    currency              VARCHAR(3)  DEFAULT 'PHP',
+    date_format           VARCHAR(10) DEFAULT 'Y-m-d',
+    notifications_enabled BOOLEAN     DEFAULT TRUE,
+    email_notifications   BOOLEAN     DEFAULT TRUE,
+    budget_alerts         BOOLEAN     DEFAULT TRUE,
+    theme                 VARCHAR(20) DEFAULT 'dark',
+    created_at            TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMP   DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ─────────────────────────────────────────────────────────────
+-- 9. NOTIFICATIONS
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS notifications (
+    id         INT          AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT          NOT NULL,
+    type       VARCHAR(50),
+    title      VARCHAR(255),
+    message    TEXT,
+    is_read    BOOLEAN      DEFAULT FALSE,
+    created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_read (user_id, is_read)
 );
 
 -- ─────────────────────────────────────────────────────────────
