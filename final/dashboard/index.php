@@ -1,0 +1,616 @@
+<?php
+$pageTitle = "Dashboard";
+require_once __DIR__ . '/../config/performance.php';
+$perf = new PerformanceMonitor();
+require_once __DIR__ . '/../config/db.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../auth/login.php");
+    exit;
+}
+
+$user_id = (int) $_SESSION['user_id'];
+$month = date('Y-m');
+
+if (isset($_POST['edit_expense_id'])) {
+    $exp_id = (int) $_POST['edit_expense_id'];
+    $amount = (float) ($_POST['edit_amount'] ?? 0);
+    $description = trim($_POST['edit_description'] ?? '');
+    $category = trim($_POST['edit_category'] ?? 'Food');
+    $stmt = $conn->prepare("UPDATE expenses SET amount = ?, category = ?, description = ? WHERE id = ? AND user_id = ?");
+    $stmt->bind_param("dssii", $amount, $category, $description, $exp_id, $user_id);
+    $stmt->execute();
+    $stmt->close();
+    header("Location: index.php");
+    exit;
+}
+
+if (isset($_POST['delete_expense_id'])) {
+    // Soft-delete: move to trash (sets deleted_at timestamp)
+    $exp_id = (int) $_POST['delete_expense_id'];
+    $stmt = $conn->prepare("UPDATE expenses SET deleted_at = NOW() WHERE id = ? AND user_id = ? AND deleted_at IS NULL");
+    $stmt->bind_param("ii", $exp_id, $user_id);
+    $stmt->execute();
+    $stmt->close();
+    header("Location: index.php");
+    exit;
+}
+
+if (isset($_POST['restore_expense_id'])) {
+    // Restore from trash
+    $exp_id = (int) $_POST['restore_expense_id'];
+    $stmt = $conn->prepare("UPDATE expenses SET deleted_at = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL");
+    $stmt->bind_param("ii", $exp_id, $user_id);
+    $stmt->execute();
+    $stmt->close();
+    header("Location: index.php");
+    exit;
+}
+
+if (isset($_POST['purge_expense_id'])) {
+    // Permanently delete a single trashed expense
+    $exp_id = (int) $_POST['purge_expense_id'];
+    $stmt = $conn->prepare("DELETE FROM expenses WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL");
+    $stmt->bind_param("ii", $exp_id, $user_id);
+    $stmt->execute();
+    $stmt->close();
+    header("Location: index.php");
+    exit;
+}
+
+if (isset($_POST['empty_trash'])) {
+    // Permanently delete ALL trashed expenses for this user
+    $stmt = $conn->prepare("DELETE FROM expenses WHERE user_id = ? AND deleted_at IS NOT NULL");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $stmt->close();
+    header("Location: index.php");
+    exit;
+}
+
+if (isset($_POST['set_budget']) && ($_POST['budget'] ?? '') !== '') {
+    $total_budget = (float) $_POST['budget'];
+    $pct_food = isset($_POST['pct_food']) ? (float) $_POST['pct_food'] : 40;
+    $pct_transport = isset($_POST['pct_transport']) ? (float) $_POST['pct_transport'] : 25;
+    $pct_bills = isset($_POST['pct_bills']) ? (float) $_POST['pct_bills'] : 20;
+    $pct_savings = isset($_POST['pct_savings']) ? (float) $_POST['pct_savings'] : 15;
+
+    $pct_food = max(0, $pct_food); $pct_transport = max(0, $pct_transport);
+    $pct_bills = max(0, $pct_bills); $pct_savings = max(0, $pct_savings);
+    $sum = $pct_food + $pct_transport + $pct_bills + $pct_savings;
+    if ($sum > 0) {
+        $pct_food      = round($pct_food / $sum * 100, 2);
+        $pct_transport = round($pct_transport / $sum * 100, 2);
+        $pct_bills     = round($pct_bills / $sum * 100, 2);
+        $pct_savings   = round(100 - $pct_food - $pct_transport - $pct_bills, 2);
+    } else { $pct_food=40; $pct_transport=25; $pct_bills=20; $pct_savings=15; }
+
+    $stmt = $conn->prepare("INSERT INTO budgets (user_id, month, total_budget) VALUES (?, ?, ?)");
+    $stmt->bind_param("isd", $user_id, $month, $total_budget);
+    $stmt->execute(); $stmt->close();
+
+    $stmt = $conn->prepare("DELETE FROM category_budgets WHERE user_id = ? AND month = ?");
+    $stmt->bind_param("is", $user_id, $month);
+    $stmt->execute(); $stmt->close();
+
+    $categories = ['Food'=>$pct_food,'Transportation'=>$pct_transport,'Bills'=>$pct_bills,'Savings'=>$pct_savings];
+    foreach ($categories as $cat => $pct) {
+        $alloc = round($total_budget * $pct / 100, 2);
+        $stmt = $conn->prepare("INSERT INTO category_budgets (user_id, month, category, allocated_amount, percentage) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("issdd", $user_id, $month, $cat, $alloc, $pct);
+        $stmt->execute(); $stmt->close();
+    }
+    header("Location: index.php"); exit;
+}
+
+if (isset($_POST['add_expense']) && ($_POST['amount'] ?? '') !== '') {
+    $amount = (float) $_POST['amount'];
+    $description = trim($_POST['description'] ?? 'Expense');
+    $category = trim($_POST['category'] ?? 'Food');
+    $date = date('Y-m-d');
+    $stmt = $conn->prepare("INSERT INTO expenses (user_id, amount, category, description, date) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("idsss", $user_id, $amount, $category, $description, $date);
+    $stmt->execute(); $stmt->close();
+    header("Location: index.php"); exit;
+}
+
+$stmt = $conn->prepare("SELECT total_budget FROM budgets WHERE user_id = ? AND month = ? ORDER BY id DESC LIMIT 1");
+$stmt->bind_param("is", $user_id, $month);
+$stmt->execute();
+$budget_row = $stmt->get_result()->fetch_assoc(); $stmt->close();
+$total = $budget_row ? (float) $budget_row['total_budget'] : 0.0;
+
+$stmt = $conn->prepare("SELECT category, allocated_amount, percentage FROM category_budgets WHERE user_id = ? AND month = ?");
+$stmt->bind_param("is", $user_id, $month);
+$stmt->execute();
+$res = $stmt->get_result();
+$cat_alloc = [];
+while ($row = $res->fetch_assoc()) { $cat_alloc[$row['category']] = $row; }
+$stmt->close();
+
+$defaults = ['Food'=>40,'Transportation'=>25,'Bills'=>20,'Savings'=>15];
+foreach ($defaults as $cat => $pct) {
+    if (!isset($cat_alloc[$cat])) {
+        $cat_alloc[$cat] = ['category'=>$cat,'allocated_amount'=>$total>0?round($total*$pct/100,2):0,'percentage'=>$pct];
+    }
+}
+
+$stmt = $conn->prepare("SELECT id, amount, category, description, date FROM expenses WHERE user_id = ? AND DATE_FORMAT(date, '%Y-%m') = ? AND deleted_at IS NULL ORDER BY date DESC, id DESC");
+$stmt->bind_param("is", $user_id, $month);
+$stmt->execute();
+$res = $stmt->get_result();
+$expenses = [];
+while ($row = $res->fetch_assoc()) { $expenses[] = $row; }
+$stmt->close();
+
+$cat_spent = ['Food'=>0,'Transportation'=>0,'Bills'=>0,'Savings'=>0];
+$spent = 0.0;
+foreach ($expenses as $expense) {
+    $spent += (float) $expense['amount'];
+    if (array_key_exists($expense['category'], $cat_spent)) {
+        $cat_spent[$expense['category']] += (float) $expense['amount'];
+    }
+}
+
+$remaining    = $total - $spent;
+$percent_used = $total > 0 ? round(($spent / $total) * 100, 1) : 0;
+$percent_left = $total > 0 ? round(($remaining / $total) * 100, 1) : 0;
+
+// Fetch trashed expenses (not yet auto-purged, deleted within last 30 days)
+$stmt = $conn->prepare("SELECT id, amount, category, description, date, deleted_at,
+    DATEDIFF(DATE_ADD(deleted_at, INTERVAL 30 DAY), NOW()) AS days_left
+    FROM expenses
+    WHERE user_id = ? AND deleted_at IS NOT NULL
+    ORDER BY deleted_at DESC");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$res = $stmt->get_result();
+$trashed_expenses = [];
+while ($row = $res->fetch_assoc()) { $trashed_expenses[] = $row; }
+$stmt->close();
+
+function catPct($spent_value, $alloc_value) {
+    if ($alloc_value <= 0) return 0;
+    return min(100, round($spent_value / $alloc_value * 100, 1));
+}
+function statusCls($pct) {
+    if ($pct >= 90) return 'danger';
+    if ($pct >= 70) return 'warning';
+    return 'safe';
+}
+function catCss($cat) {
+    $map = ['Food'=>'food','Transportation'=>'transport','Bills'=>'bills','Savings'=>'savings'];
+    return $map[$cat] ?? 'food';
+}
+
+$insights = [];
+foreach (['Food','Transportation','Bills','Savings'] as $cat) {
+    $alloc = (float) $cat_alloc[$cat]['allocated_amount'];
+    $spent_cat = (float) $cat_spent[$cat];
+    $pct = catPct($spent_cat, $alloc);
+    $left = $alloc - $spent_cat;
+    if ($pct >= 90)
+        $insights[] = ['color'=>'red',   'title'=>$cat.' near limit',    'text'=>"You've used {$pct}% of your {$cat} budget. Avoid adding more {$cat} expenses this month."];
+    elseif ($pct >= 70)
+        $insights[] = ['color'=>'yellow','title'=>$cat.' trending high',  'text'=>"{$cat} spending is at {$pct}%. Consider cutting back to stay on track."];
+    elseif ($pct < 50 && $alloc > 0)
+        $insights[] = ['color'=>'green', 'title'=>$cat.' on track',       'text'=>'Only '.$pct.'% of '.$cat.' budget used. You have PHP '.number_format($left,2).' remaining.'];
+}
+if (empty($insights))
+    $insights[] = ['color'=>'green','title'=>'All categories on track','text'=>'Great job! All spending is within safe limits this month.'];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SmartBudget dashboard for budget tracking, expense management, and spending insights.">
+    <meta name="keywords" content="budget dashboard, expense tracker, personal finance, money management">
+    <meta name="author" content="SmartBudget Team">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="../css/style.css?v=<?= filemtime('../css/style.css') ?>">
+    <link rel="stylesheet" href="../css/responsive.css">
+<title><?= htmlspecialchars($pageTitle) ?> - SmartBudget</title>
+</head>
+<body class="app-page">
+<div class="container figma-container">
+    <?php include '../includes/header.php'; ?>
+
+    <div class="dashboard-grid summary-row">
+        <div class="summary-card figma-card">
+            <div class="summary-title">Total Monthly Budget</div>
+            <div class="summary-amount"><?= $total > 0 ? 'PHP ' . number_format($total, 2) : 'PHP 0.00' ?></div>
+            <div class="summary-meta"><?= $total > 0 ? 'Set on ' . date('M j, Y') : 'No budget set yet' ?></div>
+        </div>
+        <div class="summary-card figma-card">
+            <div class="summary-title">Total Spent</div>
+            <div class="summary-amount">PHP <?= number_format($spent, 2) ?></div>
+            <div class="summary-meta"><?= $percent_used ?>% of budget used</div>
+        </div>
+        <div class="summary-card figma-card">
+            <div class="summary-title">Remaining Budget</div>
+            <div class="summary-amount"><?= $total > 0 ? 'PHP ' . number_format($remaining, 2) : 'PHP 0.00' ?></div>
+            <div class="summary-meta"><?= $total > 0 ? $percent_left . '% left for the month' : 'Set a budget first' ?></div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card figma-teal category-card">
+            <h3>Category Breakdown</h3>
+            <?php if ($total <= 0): ?>
+                <p class="no-expenses">Set a monthly budget to see your breakdown.</p>
+            <?php else: ?>
+                <div class="category-list">
+                    <?php foreach (['Food', 'Transportation', 'Bills', 'Savings'] as $cat): ?>
+                        <?php
+                        $alloc = (float) $cat_alloc[$cat]['allocated_amount'];
+                        $spent_cat = (float) $cat_spent[$cat];
+                        $pct = catPct($spent_cat, $alloc);
+                        $status = statusCls($pct);
+                        $css = catCss($cat);
+                        $bar_cls = $css . ($status !== 'safe' ? ' ' . $status : '');
+                        ?>
+                        <div class="category-item">
+                            <div class="category-left">
+                                <span class="category-name"><?= htmlspecialchars($cat) ?></span>
+                                <span class="category-amount">PHP <?= number_format($spent_cat, 2) ?> / PHP <?= number_format($alloc, 2) ?> allocated</span>
+                            </div>
+                            <div class="category-progress-row">
+                                <div class="progress-bar">
+                                    <div class="progress-fill <?= htmlspecialchars($bar_cls) ?>" style="width:<?= $pct ?>%"></div>
+                                </div>
+                                <span class="category-percentage"><?= $pct ?>%</span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Set Monthly Budget -->
+        <div class="card figma-teal budget-card">
+            <h3>Set Monthly Budget</h3>
+            <form method="POST" id="budgetForm" class="budget-form">
+                <input type="hidden" name="set_budget" value="1">
+                <input type="hidden" name="pct_food"      id="hPctFood"      value="<?= $cat_alloc['Food']['percentage'] ?>">
+                <input type="hidden" name="pct_transport" id="hPctTransport" value="<?= $cat_alloc['Transportation']['percentage'] ?>">
+                <input type="hidden" name="pct_bills"     id="hPctBills"     value="<?= $cat_alloc['Bills']['percentage'] ?>">
+                <input type="hidden" name="pct_savings"   id="hPctSavings"   value="<?= $cat_alloc['Savings']['percentage'] ?>">
+                <div class="form-group budget-form-group-inline">
+                    <label class="budget-label">Total Budget (&#8369;)</label>
+                    <input name="budget" id="budgetInput" type="number" step="0.01" min="0" placeholder="00.00" required class="budget-input">
+                    <button type="submit" class="btn-set">Set</button>
+                </div>
+            </form>
+
+            <div class="auto-split">
+                <h4 class="autosplit-title">Auto-split across categories</h4>
+                <div class="split-grid" id="splitGrid" onclick="openModal()">
+                    <div class="split-tag">
+                        <span class="tag-name">Food</span>
+                        <span class="tag-amount" id="dispFood">&#8369;<?= number_format($cat_alloc['Food']['allocated_amount'],0) ?></span>
+                        <span class="tag-percent" id="dispPctFood"><?= $cat_alloc['Food']['percentage'] ?>%</span>
+                    </div>
+                    <div class="split-tag">
+                        <span class="tag-name">Transport</span>
+                        <span class="tag-amount" id="dispTransport">&#8369;<?= number_format($cat_alloc['Transportation']['allocated_amount'],0) ?></span>
+                        <span class="tag-percent" id="dispPctTransport"><?= $cat_alloc['Transportation']['percentage'] ?>%</span>
+                    </div>
+                    <div class="split-tag">
+                        <span class="tag-name">Bills</span>
+                        <span class="tag-amount" id="dispBills">&#8369;<?= number_format($cat_alloc['Bills']['allocated_amount'],0) ?></span>
+                        <span class="tag-percent" id="dispPctBills"><?= $cat_alloc['Bills']['percentage'] ?>%</span>
+                    </div>
+                    <div class="split-tag">
+                        <span class="tag-name">Savings</span>
+                        <span class="tag-amount" id="dispSavings">&#8369;<?= number_format($cat_alloc['Savings']['allocated_amount'],0) ?></span>
+                        <span class="tag-percent" id="dispPctSavings"><?= $cat_alloc['Savings']['percentage'] ?>%</span>
+                    </div>
+                </div>
+                <div class="customize-hint" onclick="openModal()">&#9998; Tap to customise percentages</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card figma-teal expenses-card">
+            <h3>Recent Expenses</h3>
+            <div class="expense-list">
+                <?php if (empty($expenses)): ?>
+                    <p class="no-expenses">No expenses recorded this month yet.</p>
+                <?php else: ?>
+                    <?php foreach ($expenses as $e): ?>
+                        <div class="expense-item">
+                            <div class="expense-info">
+                                <span class="expense-description"><?= htmlspecialchars($e['description']) ?></span>
+                                <span class="expense-meta"><?= htmlspecialchars($e['category']) ?> - <?= date('M j, Y', strtotime($e['date'])) ?></span>
+                            </div>
+                            <span class="expense-amount">PHP <?= number_format((float) $e['amount'], 2) ?></span>
+                            <button type="button" class="btn-delete-expense"
+                                onclick="openEditModal('<?= (int)$e['id'] ?>', '<?= (float)$e['amount'] ?>', '<?= htmlspecialchars($e['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($e['category'], ENT_QUOTES) ?>')"
+                                title="Edit">Edit</button>
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="delete_expense_id" value="<?= (int) $e['id'] ?>">
+                                <button type="submit" class="btn-delete-expense btn-trash-expense" onclick="return confirm('Move this expense to trash? You can restore it within 30 days.')" title="Move to Trash">Delete</button>
+                            </form>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+            <div class="expense-add-card">
+                <h4 class="expense-title">Add New Expense</h4>
+                <form method="POST" class="expense-form">
+                    <input type="hidden" name="add_expense" value="1">
+                    <div class="expense-grid">
+                        <div class="form-group">
+                            <label>Amount</label>
+                            <input type="number" name="amount" step="0.01" min="0.01" placeholder="00.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" name="description" placeholder="Lunch, Coffee, Gas" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category">
+                                <option value="Food">Food</option>
+                                <option value="Transportation">Transportation</option>
+                                <option value="Bills">Bills</option>
+                                <option value="Savings">Savings</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-add-expense">Add Expense</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card figma-teal insights-card">
+            <h3>Spending Insights</h3>
+            <div class="insight-list">
+                <?php foreach ($insights as $ins): ?>
+                    <div class="insight-box <?= htmlspecialchars($ins['color']) ?>">
+                        <div class="insight-box-title"><?= htmlspecialchars($ins['title']) ?></div>
+                        <p class="insight-box-text"><?= htmlspecialchars($ins['text']) ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ TRASH / RECENTLY DELETED ══ -->
+    <div class="card figma-teal trash-section">
+        <div class="trash-header">
+            <div class="trash-header-left">
+                <h3 class="trash-title">Recently Deleted</h3>
+                <?php if (!empty($trashed_expenses)): ?>
+                    <span class="trash-count-pill"><?= count($trashed_expenses) ?> item<?= count($trashed_expenses) !== 1 ? 's' : '' ?></span>
+                <?php endif; ?>
+            </div>
+            <div class="trash-header-right">
+                <button class="btn-toggle-trash" onclick="toggleTrash()" id="trashToggleBtn">
+                    <?= empty($trashed_expenses) ? 'No deleted items' : 'Show Deleted (' . count($trashed_expenses) . ')' ?>
+                </button>
+                <?php if (!empty($trashed_expenses)): ?>
+                <form method="POST" style="display:inline;">
+                    <input type="hidden" name="empty_trash" value="1">
+                    <button type="submit" class="btn-empty-trash"
+                        onclick="return confirm('Permanently delete ALL trashed expenses? This cannot be undone.')">
+                        Empty Trash
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <p class="trash-info-text">Deleted expenses are kept for <strong>30 days</strong> before being permanently removed. You can restore them at any time during this period.</p>
+
+        <div id="trashList" class="trash-list" style="display:none;">
+            <?php if (empty($trashed_expenses)): ?>
+                <div class="trash-empty-state">
+                    <span class="trash-empty-icon">✅</span>
+                    <span class="trash-empty-text">Trash is empty</span>
+                </div>
+            <?php else: ?>
+                <?php foreach ($trashed_expenses as $t): ?>
+                    <?php
+                        $days_left = max(0, (int) $t['days_left']);
+                        $urgency_cls = $days_left <= 3 ? 'urgent' : ($days_left <= 7 ? 'warning' : '');
+                    ?>
+                    <div class="trash-item <?= $urgency_cls ?>">
+                        <div class="trash-item-info">
+                            <span class="trash-item-desc"><?= htmlspecialchars($t['description']) ?></span>
+                            <span class="trash-item-meta">
+                                <?= htmlspecialchars($t['category']) ?> · PHP <?= number_format((float)$t['amount'], 2) ?> · <?= date('M j, Y', strtotime($t['date'])) ?>
+                            </span>
+                            <span class="trash-item-expiry <?= $urgency_cls ?>">
+                                <?php if ($days_left === 0): ?>
+                                    ⚠ Expires today
+                                <?php elseif ($days_left === 1): ?>
+                                    ⚠ Expires tomorrow
+                                <?php else: ?>
+                                    Auto-deletes in <?= $days_left ?> day<?= $days_left !== 1 ? 's' : '' ?>
+                                <?php endif; ?>
+                            </span>
+                        </div>
+                        <div class="trash-item-actions">
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="restore_expense_id" value="<?= (int)$t['id'] ?>">
+                                <button type="submit" class="btn-restore-expense">↩ Restore</button>
+                            </form>
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="purge_expense_id" value="<?= (int)$t['id'] ?>">
+                                <button type="submit" class="btn-purge-expense"
+                                    onclick="return confirm('Permanently delete this expense? This cannot be undone.')">✕ Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+</div><!-- /container -->
+
+<!-- Customise Split Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalIfBg(event)">
+    <div class="modal-box">
+        <h4>Customise Budget Split</h4>
+        <p class="modal-hint">Enter percentages for each category. They will be auto-normalised to total 100%.</p>
+        <div class="pct-row">
+            <label>&#127828;Food</label>
+            <input type="number" id="mPctFood" min="0" max="100" step="0.1" value="<?= $cat_alloc['Food']['percentage'] ?>" oninput="updateTotal()"><span>%</span>
+        </div>
+        <div class="pct-row">
+            <label>&#128652;Transport</label>
+            <input type="number" id="mPctTransport" min="0" max="100" step="0.1" value="<?= $cat_alloc['Transportation']['percentage'] ?>" oninput="updateTotal()"><span>%</span>
+        </div>
+        <div class="pct-row">
+            <label>&#128161;Bills</label>
+            <input type="number" id="mPctBills" min="0" max="100" step="0.1" value="<?= $cat_alloc['Bills']['percentage'] ?>" oninput="updateTotal()"><span>%</span>
+        </div>
+        <div class="pct-row">
+            <label>&#127968;Savings</label>
+            <input type="number" id="mPctSavings" min="0" max="100" step="0.1" value="<?= $cat_alloc['Savings']['percentage'] ?>" oninput="updateTotal()"><span>%</span>
+        </div>
+        <div class="pct-total-row">Total: <span id="pctTotal">100</span>% <span id="pctWarning" style="display:none;">&#9888; Will be auto-normalised to 100%</span></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-apply" onclick="applyPercentages()">Apply</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Expense Modal -->
+<div class="modal-overlay" id="editModal" onclick="closeEditModalIfBg(event)">
+    <div class="modal-box">
+        <h4>Edit Expense</h4>
+        <form method="POST">
+            <input type="hidden" name="edit_expense_id" id="edit_id">
+            <div class="pct-row"><label>Amount</label><input type="number" step="0.01" name="edit_amount" id="edit_amount" required></div>
+            <div class="pct-row"><label>Description</label><input type="text" name="edit_description" id="edit_description" required></div>
+            <div class="pct-row">
+                <label>Category</label>
+                <select name="edit_category" id="edit_category">
+                    <option value="Food">Food</option>
+                    <option value="Transportation">Transportation</option>
+                    <option value="Bills">Bills</option>
+                    <option value="Savings">Savings</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn-apply">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+
+/* ── Budget split modal ── */
+function openModal() {
+    document.getElementById('modalOverlay').classList.add('open');
+    updateTotal();
+}
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+}
+function closeModalIfBg(e) {
+    if (e.target.id === 'modalOverlay') closeModal();
+}
+function updateTotal() {
+    const f = parseFloat(document.getElementById('mPctFood').value) || 0;
+    const t = parseFloat(document.getElementById('mPctTransport').value) || 0;
+    const b = parseFloat(document.getElementById('mPctBills').value) || 0;
+    const s = parseFloat(document.getElementById('mPctSavings').value) || 0;
+    const total = Math.round((f + t + b + s) * 10) / 10;
+    document.getElementById('pctTotal').textContent = total;
+    document.getElementById('pctWarning').style.display = (total !== 100) ? 'inline' : 'none';
+}
+function applyPercentages() {
+    const f = parseFloat(document.getElementById('mPctFood').value) || 0;
+    const t = parseFloat(document.getElementById('mPctTransport').value) || 0;
+    const b = parseFloat(document.getElementById('mPctBills').value) || 0;
+    const s = parseFloat(document.getElementById('mPctSavings').value) || 0;
+    const sum = f + t + b + s || 1;
+    const budgetValue = parseFloat(document.getElementById('budgetInput').value) || 0;
+
+    document.getElementById('hPctFood').value = f;
+    document.getElementById('hPctTransport').value = t;
+    document.getElementById('hPctBills').value = b;
+    document.getElementById('hPctSavings').value = s;
+
+    function percent(val) { return (Math.round(val / sum * 1000) / 10) + '%'; }
+    function amount(val)  { return 'PHP ' + Math.round(budgetValue * val / sum).toLocaleString(); }
+
+    document.getElementById('dispPctFood').textContent = percent(f);
+    document.getElementById('dispPctTransport').textContent = percent(t);
+    document.getElementById('dispPctBills').textContent = percent(b);
+    document.getElementById('dispPctSavings').textContent = percent(s);
+
+    if (budgetValue > 0) {
+        document.getElementById('dispFood').textContent = amount(f);
+        document.getElementById('dispTransport').textContent = amount(t);
+        document.getElementById('dispBills').textContent = amount(b);
+        document.getElementById('dispSavings').textContent = amount(s);
+    }
+    closeModal();
+}
+
+const budgetInput = document.getElementById('budgetInput');
+if (budgetInput) {
+    budgetInput.addEventListener('input', function () {
+        const value = parseFloat(this.value) || 0;
+        const f = parseFloat(document.getElementById('hPctFood').value) || 0;
+        const t = parseFloat(document.getElementById('hPctTransport').value) || 0;
+        const b = parseFloat(document.getElementById('hPctBills').value) || 0;
+        const s = parseFloat(document.getElementById('hPctSavings').value) || 0;
+        const sum = f + t + b + s || 100;
+        function amount(val) { return 'PHP ' + Math.round(value * val / sum).toLocaleString(); }
+        document.getElementById('dispFood').textContent = amount(f);
+        document.getElementById('dispTransport').textContent = amount(t);
+        document.getElementById('dispBills').textContent = amount(b);
+        document.getElementById('dispSavings').textContent = amount(s);
+    });
+}
+
+/* ── Edit expense modal ── */
+function openEditModal(id, amount, description, category) {
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_amount').value = amount;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('edit_category').value = category;
+    document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('open');
+}
+function closeEditModalIfBg(e) {
+    if (e.target.id === 'editModal') closeEditModal();
+}
+
+/* ── Trash toggle ── */
+function toggleTrash() {
+    const list = document.getElementById('trashList');
+    const btn  = document.getElementById('trashToggleBtn');
+    const trashCount = <?= count($trashed_expenses) ?>;
+    if (!trashCount) return;
+    if (list.style.display === 'none') {
+        list.style.display = 'flex';
+        btn.textContent = 'Hide Deleted (' + trashCount + ')';
+    } else {
+        list.style.display = 'none';
+        btn.textContent = 'Show Deleted (' + trashCount + ')';
+    }
+}
+</script>
+<?php $perf->displayStats(); ?>
+</body>
+</html>
