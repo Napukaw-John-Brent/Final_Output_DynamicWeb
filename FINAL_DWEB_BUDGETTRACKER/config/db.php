@@ -7,9 +7,17 @@ $host = getenv('DB_HOST') ?: 'db';
 $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASS') ?: 'rootpassword';
 
-$conn = new mysqli($host, $user, $pass);
+// Retry loop - wait for MySQL to be ready
+$conn = null;
+$attempts = 0;
+while ($attempts < 10) {
+    $conn = new mysqli($host, $user, $pass);
+    if (!$conn->connect_error) break;
+    $attempts++;
+    sleep(3);
+}
 if ($conn->connect_error) {
-    die("Database connection failed: " . $conn->connect_error);
+    die("Database connection failed after retries: " . $conn->connect_error);
 }
 
 $conn->query("CREATE DATABASE IF NOT EXISTS budget_app");
