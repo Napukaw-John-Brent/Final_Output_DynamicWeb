@@ -75,14 +75,6 @@ CREATE TABLE IF NOT EXISTS expenses (
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
--- ─────────────────────────────────────────────────────────────
--- 6. DEALS  (shared, no user ownership)
--- ─────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS deals (
-    id    INT           AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(100)  NOT NULL,
-    price DECIMAL(10,2) NOT NULL
-);
 
 -- ─────────────────────────────────────────────────────────────
 -- 7. QR_CODES

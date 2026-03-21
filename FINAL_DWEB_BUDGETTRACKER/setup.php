@@ -39,11 +39,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS expenses (
   date DATE
 )") or $errors[] = "expenses: " . $conn->error;
 
-$conn->query("CREATE TABLE IF NOT EXISTS deals (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(100),
-  price DECIMAL(10,2)
-)") or $errors[] = "deals: " . $conn->error;
 
 $conn->query("CREATE TABLE IF NOT EXISTS qr_codes (
   id INT AUTO_INCREMENT PRIMARY KEY,
