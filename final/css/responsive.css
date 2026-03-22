@@ -1,0 +1,823 @@
+/* ============================================
+   SmartBudget — Mobile & Tablet Responsive
+   Only applies to screens ≤ 1024px.
+   Desktop layout (>1024px) is untouched.
+   ============================================ */
+
+/* ============================================
+   TABLET  (641px – 1024px)
+   ============================================ */
+@media (min-width: 641px) and (max-width: 1024px) {
+
+  /* ── Auth / Landing pages ── */
+  body.auth-page,
+  body.landing-page {
+    padding: var(--space-8) var(--space-6);
+    align-items: flex-start;
+  }
+
+  body.auth-page .container,
+  .landing-wrap {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── App page container ── */
+  body.app-page .container,
+  body.app-page .container.figma-container {
+    max-width: 100%;
+    padding: var(--space-4) var(--space-5);
+  }
+
+  /* ── Page header nav ── */
+  .page-header {
+    padding-left: var(--space-5);
+    padding-right: var(--space-5);
+    margin-left: calc(-1 * var(--space-5));
+    margin-right: calc(-1 * var(--space-5));
+    gap: var(--space-3);
+  }
+
+  .page-header nav {
+    gap: var(--space-1);
+  }
+
+  .page-header nav a,
+  .nav-link {
+    font-size: var(--text-xs);
+    padding: 5px var(--space-3);
+  }
+
+  /* ── Dashboard grid ── */
+  .figma-container .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  .figma-container .dashboard-grid.summary-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+  }
+
+  /* ── Stats page ── */
+  .stats-main {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* ── Profile grid ── */
+  .profile-grid {
+    grid-template-columns: 220px 1fr;
+    gap: 14px;
+  }
+
+  /* ── QR top grid ── */
+  .qr-top-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  /* ── Expense grid ── */
+  .expense-grid {
+    grid-template-columns: 1fr 2fr 1fr;
+  }
+
+  /* ── Footer ── */
+  .footer-content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    padding: 0 var(--space-5);
+  }
+}
+
+
+/* ============================================
+   MOBILE  (≤ 640px)
+   ============================================ */
+@media (max-width: 640px) {
+
+  /* ── Auth / Landing pages ── */
+  body.auth-page {
+    padding: var(--space-5) var(--space-4);
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+
+  body.auth-page .container {
+    max-width: 100%;
+  }
+
+  body.auth-page .hero-brand {
+    margin-bottom: var(--space-5);
+  }
+
+  body.auth-page .hero-brand .logo img {
+    width: 130px;
+  }
+
+  body.auth-page .hero-brand h1 {
+    font-size: var(--text-xl);
+  }
+
+  body.auth-page .card {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+  }
+
+  /* ── Landing page ── */
+  body.landing-page {
+    padding: var(--space-8) var(--space-4);
+    align-items: center;
+  }
+
+  .landing-wrap {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .landing-brand {
+    margin-bottom: var(--space-8);
+  }
+
+  .landing-logo img {
+    width: 130px;
+  }
+
+  .landing-brand h1 {
+    font-size: var(--text-2xl);
+  }
+
+  .landing-tagline {
+    font-size: var(--text-base);
+  }
+
+  .landing-btn {
+    max-width: 100%;
+    padding: var(--space-4) var(--space-6);
+  }
+
+  /* ── App page ── */
+  body.app-page .container,
+  body.app-page .container.figma-container {
+    max-width: 100%;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  /* ── Page header / nav ── */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-3);
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+    margin-left: calc(-1 * var(--space-4));
+    margin-right: calc(-1 * var(--space-4));
+  }
+
+  .brand {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .logo-img {
+    height: 32px;
+  }
+
+  .brand-name {
+    font-size: var(--text-lg);
+  }
+
+  .page-header nav {
+    width: 100%;
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .page-header nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .page-header nav a,
+  .nav-link {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .nav-icon {
+    font-size: 0.85rem;
+  }
+
+  /* ── Cards ── */
+  .card {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
+  }
+
+  .card:hover {
+    transform: none; /* disable lift on mobile */
+  }
+
+  /* ── Dashboard grid ── */
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .figma-container .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .figma-container .dashboard-grid.summary-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  /* ── Summary cards ── */
+  .summary-card {
+    padding: var(--space-4);
+  }
+
+  .summary-card.figma-card {
+    padding: var(--space-4);
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .summary-card.figma-card .summary-title {
+    margin-bottom: var(--space-1);
+  }
+
+  .summary-card.figma-card .summary-amount {
+    font-size: var(--text-xl);
+  }
+
+  /* ── Budget form ── */
+  .budget-form .form-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .budget-form label {
+    min-width: unset;
+  }
+
+  .budget-form input {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .budget-form-group-inline {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .budget-label {
+    font-size: var(--text-sm);
+  }
+
+  .budget-input {
+    width: 100%;
+  }
+
+  /* ── Expense input row ── */
+  .expense-input-row {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .expense-input-row input,
+  .expense-input-row select {
+    flex: 1 1 calc(50% - var(--space-2));
+    min-width: 0;
+  }
+
+  .expense-input-row input[type="number"] {
+    min-width: 80px;
+  }
+
+  .expense-input-row button {
+    width: 100%;
+    flex-shrink: 1;
+  }
+
+  /* ── Add expense form ── */
+  .expense-add-card {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    margin-top: var(--space-3);
+  }
+
+  .expense-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  /* ── Expense items ── */
+  .expense-item {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+  }
+
+  .expense-info {
+    flex: 1 1 100%;
+  }
+
+  .expense-amount {
+    flex-shrink: 0;
+  }
+
+  /* Edit/Delete buttons on mobile */
+  .btn-edit-expense,
+  .btn-delete-expense {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    margin-left: 4px !important;
+  }
+
+  /* ── Form rows ── */
+  .form-row {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .form-row input,
+  .form-row button {
+    width: 100%;
+    flex: unset;
+  }
+
+  /* ── Split grid ── */
+  .split-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  /* ── Add expense light form ── */
+  .add-expense-form-light {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .add-expense-form-light input,
+  .add-expense-form-light select {
+    flex: 1 1 calc(50% - var(--space-2));
+    min-width: 80px;
+  }
+
+  .add-expense-form-light button {
+    width: 100%;
+  }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    padding: var(--space-3);
+    align-items: flex-end;
+  }
+
+  .modal-box {
+    width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: var(--space-5);
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  .pct-row {
+    grid-template-columns: 1fr auto auto;
+    gap: var(--space-2);
+  }
+
+  .modal-actions {
+    flex-direction: row;
+    gap: var(--space-2);
+    justify-content: stretch;
+  }
+
+  .btn-cancel,
+  .btn-apply {
+    flex: 1;
+    text-align: center;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  /* ── Auth forms ── */
+  body.auth-page.auth-create {
+    padding: var(--space-5) var(--space-4) 48px !important;
+  }
+
+  .auth-card {
+    padding: var(--space-5);
+  }
+
+  .auth-card-heading {
+    font-size: var(--text-xl);
+  }
+
+  .auth-form {
+    gap: var(--space-3);
+  }
+
+  .pin-form .pin-input-wrap {
+    gap: var(--space-2);
+  }
+
+  .pin-dot {
+    width: 42px;
+    height: 42px;
+    font-size: var(--text-lg);
+  }
+
+  /* ── Register form ── */
+  .reg-card {
+    padding: var(--space-5);
+  }
+
+  .reg-row-2 {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .reg-row-dob {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  /* ── QR saver page ── */
+  .qr-wrap {
+    padding-top: var(--space-3);
+    gap: var(--space-4);
+  }
+
+  .qr-toprow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .qr-toprow h2 {
+    font-size: var(--text-lg);
+  }
+
+  .qr-top-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .scanner-box {
+    min-height: 220px;
+  }
+
+  .qr-item-row {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .qr-item-left {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .qr-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .btn-qr-copy,
+  .btn-qr-delete {
+    flex: 1;
+    text-align: center !important;
+  }
+
+  /* ── Stats page ── */
+  .stats-wrap {
+    padding: var(--space-3) 0 48px;
+  }
+
+  .stats-toprow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .stats-toprow h2 {
+    font-size: 1.1rem;
+  }
+
+  .tab-bar {
+    width: 100%;
+  }
+
+  .stab {
+    flex: 1;
+    padding: 8px var(--space-3);
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .stats-summary {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .stats-main {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .tbl-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+  }
+
+  .stats-table th,
+  .stats-table td {
+    padding: 10px 12px;
+    font-size: 0.78rem;
+  }
+
+  .chart-area {
+    height: 140px;
+    padding-left: 36px;
+  }
+
+  .bar-lbl {
+    font-size: 0.52rem;
+  }
+
+  /* ── Profile page ── */
+  .profile-wrap {
+    padding: var(--space-3) 0 48px;
+  }
+
+  .profile-toprow {
+    margin-bottom: var(--space-3);
+  }
+
+  .profile-toprow h2 {
+    font-size: 1.1rem;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+    margin-top: var(--space-3);
+  }
+
+  .profile-sidebar {
+    gap: var(--space-3);
+  }
+
+  .avatar-card {
+    padding: var(--space-5) var(--space-4) var(--space-4);
+  }
+
+  .quick-card {
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+  }
+
+  .quick-btn {
+    padding: 8px var(--space-3);
+    font-size: 0.8rem;
+  }
+
+  .profile-panel {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+  }
+
+  .pf-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-grid-2-mt {
+    grid-template-columns: 1fr;
+  }
+
+  .dob-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .pf-actions {
+    flex-direction: row;
+    gap: var(--space-2);
+    justify-content: stretch;
+  }
+
+  .btn-discard,
+  .btn-save {
+    flex: 1;
+    text-align: center;
+    padding: 10px var(--space-4) !important;
+  }
+
+  .delete-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .btn-delete-acct {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* ── Footer ── */
+  .app-footer {
+    padding: var(--space-6) 0 var(--space-4);
+    margin-top: var(--space-6);
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+    padding: 0 var(--space-4);
+  }
+
+  .footer-bottom {
+    padding-top: var(--space-4);
+    margin-top: var(--space-5);
+    font-size: 0.8rem;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  /* ── Toast notifications ── */
+  .toast-container {
+    top: auto;
+    bottom: var(--space-4);
+    right: var(--space-3);
+    left: var(--space-3);
+  }
+
+  .toast {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* ── Trash section ── */
+  .trash-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .trash-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .trash-item-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .btn-restore-expense,
+  .btn-purge-expense {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* ── Category list in teal card ── */
+  .card.figma-teal {
+    padding: var(--space-4);
+  }
+
+  /* ── Summary card adjustments ── */
+  .card.summary {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  /* ── Insight items ── */
+  .insight-item {
+    padding: var(--space-3);
+  }
+
+  /* ── Deal items ── */
+  .deal-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+  }
+
+  /* ── Page content ── */
+  .page-content {
+    padding: var(--space-3) 0 var(--space-8);
+  }
+}
+
+
+/* ============================================
+   VERY SMALL PHONES  (≤ 380px)
+   ============================================ */
+@media (max-width: 380px) {
+
+  body.auth-page {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  body.app-page .container,
+  body.app-page .container.figma-container {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .page-header {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+    margin-left: calc(-1 * var(--space-3));
+    margin-right: calc(-1 * var(--space-3));
+  }
+
+  .page-header nav a,
+  .nav-link {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+
+  .logo-img {
+    height: 28px;
+  }
+
+  .brand-name {
+    font-size: var(--text-base);
+  }
+
+  .card {
+    padding: var(--space-3);
+  }
+
+  .summary-card.figma-card .summary-amount {
+    font-size: var(--text-lg);
+  }
+
+  .pin-dot {
+    width: 38px;
+    height: 38px;
+    font-size: var(--text-base);
+  }
+
+  .reg-row-dob {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .dob-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .pct-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .stab {
+    font-size: 0.72rem;
+    padding: 7px var(--space-2);
+  }
+
+  .stats-table th,
+  .stats-table td {
+    padding: 8px 8px;
+    font-size: 0.72rem;
+  }
+
+  .expense-input-row input,
+  .expense-input-row select {
+    flex: 1 1 100%;
+  }
+
+  .add-expense-form-light input,
+  .add-expense-form-light select {
+    flex: 1 1 100%;
+  }
+
+  .split-grid {
+    grid-template-columns: 1fr;
+  }
+}

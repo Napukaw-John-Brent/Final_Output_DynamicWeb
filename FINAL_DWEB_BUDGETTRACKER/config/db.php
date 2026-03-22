@@ -12,8 +12,7 @@ if ($conn->connect_error) {
     die("Database connection failed: " . $conn->connect_error);
 }
 
-$conn->query("CREATE DATABASE IF NOT EXISTS budget_app");
-$conn->select_db("budget_app");
+$conn->select_db($dbname);
 $conn->set_charset("utf8mb4");
 
 $conn->query("CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, mobile VARCHAR(30) NULL, date_of_birth DATE NULL, password VARCHAR(255), security_pin VARCHAR(255) NULL, reset_token VARCHAR(64) NULL, reset_token_expires DATETIME NULL, avatar VARCHAR(255) NULL, city VARCHAR(100) NULL, country VARCHAR(100) NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");

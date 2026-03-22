@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" fill="none" stroke="#00CC99" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+
+  <!-- Bar 1: shortest, leftmost -->
+  <rect x="16" y="168" width="56" height="78" rx="5" stroke="#00CC99"/>
+
+  <!-- Bar 2: medium height -->
+  <rect x="92" y="118" width="56" height="128" rx="5" stroke="#00CC99"/>
+
+  <!-- Bar 3: tallest, rightmost -->
+  <rect x="168" y="62" width="56" height="184" rx="5" stroke="#00CC99"/>
+
+  <!-- Curved arrow sweeping from lower-left up to upper-right -->
+  <path d="M 30 158 Q 120 40 248 18" stroke="#00CC99" fill="none"/>
+
+  <!-- Arrowhead at tip -->
+  <polyline points="222,12 248,18 242,44" stroke="#00CC99" fill="none"/>
+
+</svg>
