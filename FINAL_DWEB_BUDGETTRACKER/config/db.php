@@ -3,15 +3,25 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$host = getenv('DB_HOST') ?: 'db';
+// Defaults suit XAMPP on Windows. Docker Compose sets DB_HOST=db, DB_PASS=rootpassword, etc.
+$host = getenv('DB_HOST') ?: 'localhost';
 $user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASS') ?: 'rootpassword';
+$dbPassEnv = getenv('DB_PASS');
+$pass = $dbPassEnv !== false ? $dbPassEnv : '';
+$dbname = getenv('DB_NAME') ?: 'budget_app';
+$dbPort = getenv('DB_PORT');
+$port = ($dbPort !== false && $dbPort !== '') ? (int) $dbPort : 3306;
 
-$conn = new mysqli($host, $user, $pass);
+$conn = new mysqli($host, $user, $pass, null, $port);
 if ($conn->connect_error) {
-    die("Database connection failed: " . $conn->connect_error);
+    $hint = '';
+    if ($conn->connect_errno === 2002) {
+        $hint = ' Start MySQL in XAMPP Control Panel (MySQL → Start) so it listens on port ' . $port . '.';
+    }
+    die('Database connection failed: ' . $conn->connect_error . $hint);
 }
 
+$conn->query("CREATE DATABASE IF NOT EXISTS `$dbname`");
 $conn->select_db($dbname);
 $conn->set_charset("utf8mb4");
 
@@ -26,10 +36,4 @@ $conn->query("CREATE TABLE IF NOT EXISTS expenses (id INT AUTO_INCREMENT PRIMARY
 $conn->query("CREATE TABLE IF NOT EXISTS qr_codes (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, qr_data TEXT)");
 
 $conn->query("CREATE TABLE IF NOT EXISTS user_settings (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT UNIQUE, currency VARCHAR(3) DEFAULT 'PHP', theme VARCHAR(20) DEFAULT 'dark', notifications_enabled BOOLEAN DEFAULT TRUE, email_notifications BOOLEAN DEFAULT TRUE, budget_alerts BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)");
-
-$pass1 = password_hash('user12345', PASSWORD_DEFAULT);
-$pass2 = password_hash('test12345', PASSWORD_DEFAULT);
-
-$conn->query("INSERT IGNORE INTO users (name, email, mobile, password) VALUES ('User_1', 'user1@gmail.com', '0998-765-4321', '$pass1')");
-$conn->query("INSERT IGNORE INTO users (name, email, mobile, password) VALUES ('User_2', 'user2@gmail.com', '0912-345-6789', '$pass2')");
 ?>
