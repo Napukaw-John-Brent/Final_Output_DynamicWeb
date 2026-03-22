@@ -1,0 +1,24 @@
+# User-uploaded avatar files (don't commit personal data)
+uploads/avatars/*.png
+uploads/avatars/*.jpg
+uploads/avatars/*.jpeg
+uploads/avatars/*.gif
+uploads/avatars/*.webp
+
+# Keep the uploads directory structure
+!uploads/.gitkeep
+!uploads/avatars/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment / secrets (if you ever add a .env file)
+.env
+.env.local

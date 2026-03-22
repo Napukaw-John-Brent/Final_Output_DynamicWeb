@@ -4,7 +4,8 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DB_HOST: db
       DB_USER: root
@@ -20,6 +21,13 @@ services:
       MYSQL_DATABASE: budget_app
     volumes:
       - db_data:/var/lib/mysql
+      - ./budget_app.sql:/docker-entrypoint-initdb.d/budget_app.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   db_data:
